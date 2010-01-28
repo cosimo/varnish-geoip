@@ -1,2 +1,3 @@
-accept-language
-accept-language.vcl
+geoip
+geoip.vcl
+.*.sw[op]

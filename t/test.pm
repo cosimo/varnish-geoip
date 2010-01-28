@@ -26,17 +26,26 @@ sub run_binary {
     return $output; 
 }
 
+sub get_bit {
+    my ($geoip_header, $bit_type) = @_;
+    my ($result) = ($geoip_header =~ m{$bit_type:([^,]*),});
+    return $result;
+}
+
 sub is_country {
     my ($ip, $expected_country, $message) = @_;
-    my $json_str = run_binary($ip);
-    my $json_obj = JSON::XS->new();
-    #diag('JSON:'.$json_str);
-    my $parsed = $json_obj->decode($json_str);
-    my $country = $parsed->{'country'};
-
+    my $geoip_str = run_binary($ip);
+    my $country = get_bit($geoip_str, 'country');
     $message ||= qq(Lookup of ip '$ip' should correspond to country '$expected_country');
-
     return is($country, $expected_country, $message);
+}
+
+sub is_city {
+    my ($ip, $expected_city, $message) = @_;
+    my $geoip_str = run_binary($ip);
+    my $city = get_bit($geoip_str, 'city');
+    $message ||= qq(Lookup of ip '$ip' should correspond to city '$expected_city');
+    return is($city, $expected_city, $message);
 }
 
 1;
