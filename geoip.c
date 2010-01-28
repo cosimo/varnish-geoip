@@ -1,5 +1,9 @@
 /*
  * Varnish-powered Geo IP lookup
+ *
+ * Idea and GeoIP code taken from
+ * http://svn.wikia-code.com/utils/varnishhtcpd/wikia.vcl
+ *
  * Cosimo, 28/01/2010
  */
 
@@ -60,7 +64,7 @@ static inline int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
 
 #ifdef __VCL__
 /* Returns the GeoIP info as synthetic response */
-void vcl_geoip_send_synthetic(const struct session *sp) {
+void vcl_geoip_send_synthetic(const struct sess *sp) {
     vcl_string hval[HEADER_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
     if (geoip_lookup(ip, hval)) {
@@ -72,7 +76,7 @@ void vcl_geoip_send_synthetic(const struct session *sp) {
 }
 
 /* Sets "X-Geo-IP" header with the geoip resolved information */
-void vcl_geoip_set_header(const struct session *sp) {
+void vcl_geoip_set_header(const struct sess *sp) {
     vcl_string hval[HEADER_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
     if (geoip_lookup(ip, hval)) {
