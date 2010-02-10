@@ -9,6 +9,7 @@ require test;
 
 my @ip = (
     [ '213.236.208.22' => 'NO' => 'Oslo' ],
+    [ '85.34.205.51'   => 'IT' => 'Pordenone' ],
 );
 
 Test::More::plan(tests => 1 + (2 * @ip));
