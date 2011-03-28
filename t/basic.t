@@ -8,18 +8,15 @@ use strict;
 require test;
 
 my @ip = (
-    [ '213.236.208.22' => 'NO' => 'Oslo' ],
-    [ '85.34.205.51'   => 'IT' => 'Pordenone' ],
+    [ '213.236.208.22' => 'NO' ],
+    [ '85.34.205.51'   => 'IT' ],
 );
 
-Test::More::plan(tests => 1 + (2 * @ip));
-
-test::update_binary();
+Test::More::plan(tests => (1 * @ip));
 
 # Basically test for supported languages
 for (@ip) {
-    my ($ip, $country, $city) = @{ $_ };
+    my ($ip, $country) = @{ $_ };
     test::is_country($ip, $country);
-    test::is_city($ip, $city);
 }
 

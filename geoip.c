@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <GeoIPCity.h>
+#include <GeoIP.h>
 #include <pthread.h>
 
 #define vcl_string char
@@ -19,12 +19,12 @@
 
 pthread_mutex_t geoip_mutex = PTHREAD_MUTEX_INITIALIZER;
 GeoIP* gi;
-GeoIPRecord *record;
+char *country;
 
 /* Init GeoIP code */
 void geoip_init () {
     if (!gi) {
-        gi = GeoIP_open_type(GEOIP_CITY_EDITION_REV1,GEOIP_MEMORY_CACHE);
+        gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION,GEOIP_MEMORY_CACHE);
         assert(gi);
     }
 }
@@ -38,17 +38,13 @@ static inline int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
         geoip_init();
     }
 
-    record = GeoIP_record_by_addr(gi, ip);
+    country = (char *)GeoIP_country_code_by_addr(gi, ip);
 
     /* Lookup succeeded */
-    if (record) {
+    if (country) {
         lookup_success = 1;
-        snprintf(resolved, HEADER_MAXLEN, "city:%s, country:%s, lat:%f, lon:%f, ip:%s",
-            record->city,
-            record->country_code,
-            record->latitude,
-            record->longitude,
-            ip
+        snprintf(resolved, HEADER_MAXLEN, "%s",
+            country
         );
     }
 
