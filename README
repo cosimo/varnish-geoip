@@ -1,7 +1,7 @@
 Varnish Geo-IP VCL
 ===========================
 
-Last updated: 10/02/2010
+Last updated: 30/11/2011
 	Cosimo Streppone <cosimo@opera.com>
 	Opera Software ASA
 
@@ -46,9 +46,16 @@ Instructions
      vcl_geoip_set_header(sp);
      }C
 
-4) Restart Varnish
+4) If you run Debian, look here:
+   
+   http://my.opera.com/cstrep/blog/2011/11/30/how-to-start-up-varnish-with-a-custom-cc-command-on-debian
 
-5) Cross your fingers
+   for instructions on how to specify a custom "cc_command" in
+   the Varnish init script.
 
-6) Profit !!
+5) Restart Varnish
+
+6) ?
+
+7) Profit !!
 
