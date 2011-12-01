@@ -1,7 +1,7 @@
 Varnish Geo-IP VCL
 ===========================
 
-Last updated: 30/11/2011
+Last updated: 1/12/2011
 	Cosimo Streppone <cosimo@opera.com>
 	Opera Software ASA
 
@@ -47,7 +47,7 @@ Instructions
      }C
 
 4) If you run Debian, look here:
-   
+
    http://my.opera.com/cstrep/blog/2011/11/30/how-to-start-up-varnish-with-a-custom-cc-command-on-debian
 
    for instructions on how to specify a custom "cc_command" in

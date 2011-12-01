@@ -4,7 +4,7 @@
  * Idea and GeoIP code taken from
  * http://svn.wikia-code.com/utils/varnishhtcpd/wikia.vcl
  *
- * Cosimo, 28/01/2010
+ * Cosimo, 01/12/2011
  */
 
 #include <assert.h>
