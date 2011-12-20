@@ -15,7 +15,14 @@
 #include <pthread.h>
 
 #define vcl_string char
-#define HEADER_MAXLEN 255
+
+/* At Opera, we use the non-existent "A6" country
+   code to identify Geo::IP failed lookups */
+#define FALLBACK_COUNTRY "A6"
+
+/* HTTP Header will be json-like */
+#define HDR_MAXLEN 255
+#define HDR_TMPL "city:%s, country:%s, lat:%f, lon:%f, ip:%s"
 
 pthread_mutex_t geoip_mutex = PTHREAD_MUTEX_INITIALIZER;
 GeoIP* gi;
@@ -29,7 +36,7 @@ void geoip_init () {
     }
 }
 
-static inline int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
+static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
     int lookup_success = 0;
 
     pthread_mutex_lock(&geoip_mutex);
@@ -43,7 +50,7 @@ static inline int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
     /* Lookup succeeded */
     if (record) {
         lookup_success = 1;
-        snprintf(resolved, HEADER_MAXLEN, "city:%s, country:%s, lat:%f, lon:%f, ip:%s",
+        snprintf(resolved, HDR_MAXLEN, HDR_TMPL,
             record->city,
             record->country_code,
             record->latitude,
@@ -54,8 +61,35 @@ static inline int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
 
     /* Failed lookup */
     else {
-        strncpy(resolved, "", HEADER_MAXLEN);
+        snprintf(resolved, HDR_MAXLEN, HDR_TMPL,
+            "",      /* City */
+            FALLBACK_COUNTRY,
+            0.0f,    /* Latitude */
+            0.0f,    /* Longitude */
+            ip
+        );
     }
+
+    pthread_mutex_unlock(&geoip_mutex);
+
+    return lookup_success;
+}
+
+static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
+    int lookup_success = 0;
+
+    pthread_mutex_lock(&geoip_mutex);
+
+    if (!gi) {
+        geoip_init();
+    }
+
+    record = GeoIP_record_by_addr(gi, ip);
+
+    snprintf(resolved, HDR_MAXLEN, "country:%s", record
+        ? record->country_code
+        : FALLBACK_COUNTRY
+    );
 
     pthread_mutex_unlock(&geoip_mutex);
 
@@ -65,7 +99,7 @@ static inline int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
 #ifdef __VCL__
 /* Returns the GeoIP info as synthetic response */
 void vcl_geoip_send_synthetic(const struct sess *sp) {
-    vcl_string hval[HEADER_MAXLEN];
+    vcl_string hval[HDR_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
     if (geoip_lookup(ip, hval)) {
         VRT_synth_page(sp, 0, hval, vrt_magic_string_end);
@@ -77,7 +111,7 @@ void vcl_geoip_send_synthetic(const struct sess *sp) {
 
 /* Sets "X-Geo-IP" header with the geoip resolved information */
 void vcl_geoip_set_header(const struct sess *sp) {
-    vcl_string hval[HEADER_MAXLEN];
+    vcl_string hval[HDR_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
     if (geoip_lookup(ip, hval)) {
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
@@ -87,9 +121,22 @@ void vcl_geoip_set_header(const struct sess *sp) {
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", "", vrt_magic_string_end);
     }
 }
+
+/* Simplified version: sets "X-Geo-IP" header with the country only */
+void vcl_geoip_country_set_header(const struct sess *sp) {
+    vcl_string hval[HDR_MAXLEN];
+    vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
+    if (geoip_lookup_country(ip, hval)) {
+        VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
+    }
+    else {
+        /* Send an empty header */
+        VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", "", vrt_magic_string_end);
+    }
+}
 #else
 int main(int argc, char **argv) {
-    vcl_string resolved[HEADER_MAXLEN] = "";
+    vcl_string resolved[HDR_MAXLEN] = "";
     if (argc == 2 && argv[1]) {
         geoip_lookup(argv[1], resolved);
     }
