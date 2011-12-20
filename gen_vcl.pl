@@ -28,6 +28,11 @@ READ_C: while (my $line = shift @c_code) {
         next;
     }
 
+    elsif ($line =~ m{__GIT_REV__}) {
+        chomp (my $git_rev = `git describe 2>/dev/null || git rev-parse HEAD`);
+        $line =~ s{__GIT_REV__}{$git_rev}e;
+    }
+
     push @vcl_code, $line;
 }
 
