@@ -23,12 +23,13 @@ sub run_binary {
     $cmd .= ' ';
     $cmd .= join(' ', map { q(') . $_ . q(') } @args);
     my $output = `$cmd`;
-    return $output; 
+    return $output;
 }
 
 sub get_bit {
     my ($geoip_header, $bit_type) = @_;
     my ($result) = ($geoip_header =~ m{$bit_type:([^,]*),});
+    $result = '' if not defined $result;
     return $result;
 }
 
