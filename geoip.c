@@ -21,8 +21,8 @@
 #define FALLBACK_COUNTRY "A6"
 
 /* HTTP Header will be json-like */
-#define HDR_MAXLEN 255
-#define HDR_TMPL "city:%s, country:%s, lat:%f, lon:%f, ip:%s"
+#define HEADER_MAXLEN 255
+#define HEADER_TMPL "city:%s, country:%s, lat:%f, lon:%f, ip:%s"
 
 pthread_mutex_t geoip_mutex = PTHREAD_MUTEX_INITIALIZER;
 GeoIP* gi;
@@ -76,7 +76,6 @@ static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
 }
 
 static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
-    int lookup_success = 0;
 
     pthread_mutex_lock(&geoip_mutex);
 
@@ -93,7 +92,8 @@ static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
 
     pthread_mutex_unlock(&geoip_mutex);
 
-    return lookup_success;
+    /* Assume always success: we have FALLBACK_COUNTRY */
+    return 1;
 }
 
 #ifdef __VCL__
@@ -126,11 +126,19 @@ void vcl_geoip_set_header(const struct sess *sp) {
 void vcl_geoip_country_set_header(const struct sess *sp) {
     vcl_string hval[HDR_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
-    if (geoip_lookup_country(ip, hval)) {
+    geoip_lookup_country(ip, hval);
+    VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
+}
+
+/* XFF version: takes IP from X-Forwarded-For header */
+void vcl_geoip_country_set_header_xff(const struct sess *sp) {
+    vcl_string hval[HEADER_MAXLEN];
+    vcl_string *ip = VRT_GetHdr(sp, HDR_REQ, "\020X-Forwarded-For:");
+    if (ip) {
+        geoip_lookup_country(ip, hval);
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
-    }
-    else {
-        /* Send an empty header */
+    } else {
+        VCL_Log("geoip: no ip from X-Forwarded-For");
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", "", vrt_magic_string_end);
     }
 }
