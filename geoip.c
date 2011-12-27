@@ -50,7 +50,7 @@ static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
     /* Lookup succeeded */
     if (record) {
         lookup_success = 1;
-        snprintf(resolved, HDR_MAXLEN, HDR_TMPL,
+        snprintf(resolved, HEADER_MAXLEN, HEADER_TMPL,
             record->city,
             record->country_code,
             record->latitude,
@@ -61,7 +61,7 @@ static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
 
     /* Failed lookup */
     else {
-        snprintf(resolved, HDR_MAXLEN, HDR_TMPL,
+        snprintf(resolved, HEADER_MAXLEN, HEADER_TMPL,
             "",      /* City */
             FALLBACK_COUNTRY,
             0.0f,    /* Latitude */
@@ -85,7 +85,7 @@ static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
 
     record = GeoIP_record_by_addr(gi, ip);
 
-    snprintf(resolved, HDR_MAXLEN, "country:%s", record
+    snprintf(resolved, HEADER_MAXLEN, "country:%s", record
         ? record->country_code
         : FALLBACK_COUNTRY
     );
@@ -99,7 +99,7 @@ static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
 #ifdef __VCL__
 /* Returns the GeoIP info as synthetic response */
 void vcl_geoip_send_synthetic(const struct sess *sp) {
-    vcl_string hval[HDR_MAXLEN];
+    vcl_string hval[HEADER_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
     if (geoip_lookup(ip, hval)) {
         VRT_synth_page(sp, 0, hval, vrt_magic_string_end);
@@ -111,7 +111,7 @@ void vcl_geoip_send_synthetic(const struct sess *sp) {
 
 /* Sets "X-Geo-IP" header with the geoip resolved information */
 void vcl_geoip_set_header(const struct sess *sp) {
-    vcl_string hval[HDR_MAXLEN];
+    vcl_string hval[HEADER_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
     if (geoip_lookup(ip, hval)) {
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
@@ -124,7 +124,7 @@ void vcl_geoip_set_header(const struct sess *sp) {
 
 /* Simplified version: sets "X-Geo-IP" header with the country only */
 void vcl_geoip_country_set_header(const struct sess *sp) {
-    vcl_string hval[HDR_MAXLEN];
+    vcl_string hval[HEADER_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
     geoip_lookup_country(ip, hval);
     VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
@@ -144,7 +144,7 @@ void vcl_geoip_country_set_header_xff(const struct sess *sp) {
 }
 #else
 int main(int argc, char **argv) {
-    vcl_string resolved[HDR_MAXLEN] = "";
+    vcl_string resolved[HEADER_MAXLEN] = "";
     if (argc == 2 && argv[1]) {
         geoip_lookup(argv[1], resolved);
     }
