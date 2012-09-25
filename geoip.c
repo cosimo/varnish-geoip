@@ -75,6 +75,8 @@ void vcl_geoip_send_synthetic(const struct sess *sp) {
 void vcl_geoip_set_header(const struct sess *sp) {
     vcl_string hval[HEADER_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
+    vcl_string *xff = VRT_GetHdr(sp, HDR_REQ, "\020X-Forwarded-For:");
+    if(xff != NULL) ip = xff;
     if (geoip_lookup(ip, hval)) {
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
     }
