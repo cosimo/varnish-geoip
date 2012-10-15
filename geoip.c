@@ -107,13 +107,26 @@ void vcl_geoip_send_synthetic(const struct sess *sp) {
     }
 }
 
+inline int strncpy_unil(vcl_string *dest, vcl_string *src, unsigned char n, char terminator) {
+    while (*src && (*src != terminator) && n--) {
+        *(dest++) = *(src++);
+    }
+}
+
+vcl_string *get_ip(const struct sess *sp, vcl_string *ip_buffer) {
+    vcl_string *xff = VRT_GetHdr(sp, HDR_REQ, "\020X-Forwarded-For:");
+    if(xff != NULL) {
+        strncpy_unil(ip_buffer, xff, 16, ',');
+        return ip_buffer;
+    }
+    return VRT_IP_string(sp, VRT_r_client_ip(sp));
+}
+
 /* Sets "X-Geo-IP" header with the geoip resolved information */
 void vcl_geoip_set_header(const struct sess *sp) {
     vcl_string hval[HEADER_MAXLEN];
-    vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
-    vcl_string *xff = VRT_GetHdr(sp, HDR_REQ, "\020X-Forwarded-For:");
-    if(xff != NULL) ip = xff;
-    if (geoip_lookup(ip, hval)) {
+    vcl_string ip_buffer[16];
+    if (geoip_lookup(get_ip(sp, ip_buffer), hval)) {
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
     }
     else {
@@ -125,20 +138,10 @@ void vcl_geoip_set_header(const struct sess *sp) {
 /* Simplified version: sets "X-Geo-IP" header with the country only */
 void vcl_geoip_country_set_header(const struct sess *sp) {
     vcl_string hval[HEADER_MAXLEN];
-    vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
-    geoip_lookup_country(ip, hval);
+    geoip_lookup_country(get_ip(sp, ip_buffer),, hval);
     VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
 }
 
-/* XFF version: takes IP from X-Forwarded-For header */
-void vcl_geoip_country_set_header_xff(const struct sess *sp) {
-    vcl_string hval[HEADER_MAXLEN];
-    vcl_string *ip = VRT_GetHdr(sp, HDR_REQ, "\020X-Forwarded-For:");
-    if (ip) {
-        geoip_lookup_country(ip, hval);
-        VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
-    } else {
-        VCL_Log("geoip: no ip from X-Forwarded-For");
 int main(int argc, char **argv) {
     vcl_string resolved[HEADER_MAXLEN] = "";
     if (argc == 2 && argv[1]) {
