@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <GeoIP.h>
+#include <GeoIPCity.h>
 #include <pthread.h>
 
 #define vcl_string char
@@ -22,6 +23,7 @@
 
 pthread_mutex_t geoip_mutex = PTHREAD_MUTEX_INITIALIZER;
 GeoIP* gi;
+GeoIPRecord *record;
 char *country;
 
 /* Init GeoIP code */
@@ -59,7 +61,7 @@ static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
     else {
         snprintf(resolved, HEADER_MAXLEN, HEADER_TMPL,
             "",      /* City */
-            FALLBACK_COUNTRY,
+            "",
             0.0f,    /* Latitude */
             0.0f,    /* Longitude */
             ip
@@ -141,11 +143,11 @@ void vcl_geoip_country_set_header(const struct sess *sp) {
     geoip_lookup_country(get_ip(sp, ip_buffer),, hval);
     VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
 }
-
+#else
 int main(int argc, char **argv) {
     vcl_string resolved[HEADER_MAXLEN] = "";
     if (argc == 2 && argv[1]) {
-        geoip_lookup(argv[1], resolved);
+        geoip_lookup_country(argv[1], resolved);
     }
     printf("%s\n", resolved);
     return 0;
