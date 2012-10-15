@@ -11,14 +11,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <GeoIPCity.h>
+#include <GeoIP.h>
 #include <pthread.h>
 
 #define vcl_string char
-
-/* At Opera, we use the non-existent "A6" country
-   code to identify Geo::IP failed lookups */
-#define FALLBACK_COUNTRY "A6"
 
 /* HTTP Header will be json-like */
 #define HEADER_MAXLEN 255
@@ -26,12 +22,12 @@
 
 pthread_mutex_t geoip_mutex = PTHREAD_MUTEX_INITIALIZER;
 GeoIP* gi;
-GeoIPRecord *record;
+char *country;
 
 /* Init GeoIP code */
 void geoip_init () {
     if (!gi) {
-        gi = GeoIP_open_type(GEOIP_CITY_EDITION_REV1,GEOIP_MEMORY_CACHE);
+        gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION,GEOIP_MEMORY_CACHE);
         assert(gi);
     }
 }
@@ -76,6 +72,7 @@ static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
 }
 
 static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
+    int lookup_success = 0;
 
     pthread_mutex_lock(&geoip_mutex);
 
@@ -83,17 +80,18 @@ static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
         geoip_init();
     }
 
-    record = GeoIP_record_by_addr(gi, ip);
+    country = (char *)GeoIP_country_code_by_addr(gi, ip);
 
-    snprintf(resolved, HEADER_MAXLEN, "country:%s", record
-        ? record->country_code
-        : FALLBACK_COUNTRY
-    );
+    if (country) {
+        lookup_success = 1;
+        snprintf(resolved, HEADER_MAXLEN, "%s", country);
+    } else {
+        strncpy(resolved, "", HEADER_MAXLEN);
+    }
 
     pthread_mutex_unlock(&geoip_mutex);
 
-    /* Assume always success: we have FALLBACK_COUNTRY */
-    return 1;
+    return lookup_success;
 }
 
 #ifdef __VCL__
@@ -113,6 +111,8 @@ void vcl_geoip_send_synthetic(const struct sess *sp) {
 void vcl_geoip_set_header(const struct sess *sp) {
     vcl_string hval[HEADER_MAXLEN];
     vcl_string *ip = VRT_IP_string(sp, VRT_r_client_ip(sp));
+    vcl_string *xff = VRT_GetHdr(sp, HDR_REQ, "\020X-Forwarded-For:");
+    if(xff != NULL) ip = xff;
     if (geoip_lookup(ip, hval)) {
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
     }
@@ -139,10 +139,6 @@ void vcl_geoip_country_set_header_xff(const struct sess *sp) {
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
     } else {
         VCL_Log("geoip: no ip from X-Forwarded-For");
-        VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", "", vrt_magic_string_end);
-    }
-}
-#else
 int main(int argc, char **argv) {
     vcl_string resolved[HEADER_MAXLEN] = "";
     if (argc == 2 && argv[1]) {
