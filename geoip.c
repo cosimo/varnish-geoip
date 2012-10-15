@@ -113,12 +113,13 @@ inline int strncpy_unil(vcl_string *dest, vcl_string *src, unsigned char n, char
     while (*src && (*src != terminator) && n--) {
         *(dest++) = *(src++);
     }
+    *(dest) = 0;
 }
 
 vcl_string *get_ip(const struct sess *sp, vcl_string *ip_buffer) {
     vcl_string *xff = VRT_GetHdr(sp, HDR_REQ, "\020X-Forwarded-For:");
     if(xff != NULL) {
-        strncpy_unil(ip_buffer, xff, 16, ',');
+        strncpy_unil(ip_buffer, xff, 15, ',');
         return ip_buffer;
     }
     return VRT_IP_string(sp, VRT_r_client_ip(sp));
