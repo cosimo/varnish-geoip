@@ -7,13 +7,13 @@
  * Cosimo, 01/12/2011
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <GeoIP.h>
 #include <GeoIPCity.h>
 #include <pthread.h>
+#include <syslog.h>
 
 #define vcl_string char
 
@@ -30,7 +30,9 @@ char *country;
 void geoip_init () {
     if (!gi) {
         gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION,GEOIP_MEMORY_CACHE);
-        assert(gi);
+        if (!gi) {
+            syslog(LOG_ERR, "Failed to open GeoIP database");
+        }
     }
 }
 
@@ -43,9 +45,12 @@ static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
         geoip_init();
     }
 
-    record = GeoIP_record_by_addr(gi, ip);
+    if (gi) {
+        record = GeoIP_record_by_addr(gi, ip);
+    } else {
+        record = NULL;
+    }
 
-    /* Lookup succeeded */
     if (record) {
         lookup_success = 1;
         snprintf(resolved, HEADER_MAXLEN, HEADER_TMPL,
@@ -55,10 +60,7 @@ static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
             record->longitude,
             ip
         );
-    }
-
-    /* Failed lookup */
-    else {
+    } else {
         snprintf(resolved, HEADER_MAXLEN, HEADER_TMPL,
             "",      /* City */
             "",
@@ -82,7 +84,11 @@ static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
         geoip_init();
     }
 
-    country = (char *)GeoIP_country_code_by_addr(gi, ip);
+    if (gi) {
+        country = (char *)GeoIP_country_code_by_addr(gi, ip);
+    } else {
+        country = NULL;
+    }
 
     if (country) {
         lookup_success = 1;
@@ -145,7 +151,9 @@ void vcl_geoip_country_set_header(const struct sess *sp) {
     geoip_lookup_country(get_ip(sp, ip_buffer), hval);
     VRT_SetHdr(sp, HDR_REQ, "\021X-Geo-IP-Country:", hval, vrt_magic_string_end);
 }
+
 #else
+
 int main(int argc, char **argv) {
     vcl_string resolved[HEADER_MAXLEN] = "";
     if (argc == 2 && argv[1]) {
@@ -154,6 +162,7 @@ int main(int argc, char **argv) {
     printf("%s\n", resolved);
     return 0;
 }
+
 #endif /* __VCL__ */
 
 /* vim: syn=c ts=4 et sts=4 sw=4 tw=0
