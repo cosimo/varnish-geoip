@@ -140,7 +140,8 @@ void vcl_geoip_set_header(const struct sess *sp) {
 /* Simplified version: sets "X-Geo-IP" header with the country only */
 void vcl_geoip_country_set_header(const struct sess *sp) {
     vcl_string hval[HEADER_MAXLEN];
-    geoip_lookup_country(get_ip(sp, ip_buffer),, hval);
+    vcl_string ip_buffer[16];
+    geoip_lookup_country(get_ip(sp, ip_buffer), hval);
     VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
 }
 #else
