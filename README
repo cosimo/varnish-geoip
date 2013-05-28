@@ -22,6 +22,31 @@ Of course this doesn't come for free. You need the city edition of Geo-IP.
 
 The rewritten header is "X-Geo-IP".
 
+X-Geo-IP header content
+-----------------------
+
+the `X-Geo-IP` header will differ depending on which function
+you decide to apply, and what GeoIP database you are using, Country or City
+edition.
+
+In case of simple country lookup, you will have:
+
+    X-Geo-IP: country:US
+
+whereas a failed lookup will return `country:A6`. That is an internal
+convention we adopted, of course YMMV.
+
+In case of City database, the header will look like:
+
+    X-Geo-IP: city:Rome, country:IT, lat:44.2134, lon:12.241, ip:1.2.3.4
+
+(numbers are made up), while in the lookup failed case, you will have:
+
+    X-Geo-IP: city:, country:A6, lat:0.0, lon:0.0, ip:1.2.3.4
+
+The invalid/internal IP case is covered by the geoip library itself, so
+it should be reported as unknown IP.
+
 Requirements
 ------------
 
@@ -48,7 +73,7 @@ Instructions
 
 4) If you run Debian, look here:
 
-   http://my.opera.com/cstrep/blog/2011/11/30/how-to-start-up-varnish-with-a-custom-cc-command-on-debian
+   http://www.streppone.it/cosimo/blog/2011/11/how-to-start-up-varnish-with-a-custom-cc_command-on-debian/
 
    for instructions on how to specify a custom "cc_command" in
    the Varnish init script.
@@ -58,4 +83,3 @@ Instructions
 6) ?
 
 7) Profit !!
-
