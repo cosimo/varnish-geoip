@@ -1,3 +1,4 @@
 geoip
 geoip.vcl
 .*.sw[op]
+.DS_Store
