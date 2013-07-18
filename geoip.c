@@ -138,7 +138,7 @@ void vcl_geoip_country_set_header_xff(const struct sess *sp) {
         geoip_lookup_country(ip, hval);
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
     } else {
-        VCL_Log("geoip: no ip from X-Forwarded-For");
+        /*VCL_Log("geoip: no ip from X-Forwarded-For");*/
         VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", "", vrt_magic_string_end);
     }
 }
