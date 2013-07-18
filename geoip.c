@@ -122,6 +122,24 @@ void vcl_geoip_set_header(const struct sess *sp) {
     }
 }
 
+/* Sets "X-Geo-IP" header with the geoip resolved information */
+/* XFF version: takes IP from X-Forwarded-For header */
+void vcl_geoip_set_header_xff(const struct sess *sp) {
+    vcl_string hval[HEADER_MAXLEN];
+    vcl_string *ip = VRT_GetHdr(sp, HDR_REQ, "\020X-Forwarded-For:");
+    if (ip) {
+        if (geoip_lookup(ip, hval)) {
+            VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", hval, vrt_magic_string_end);
+        }
+        else {
+            /* Send an empty header */
+            VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", "", vrt_magic_string_end);
+        }
+    } else {
+        VRT_SetHdr(sp, HDR_REQ, "\011X-Geo-IP:", "", vrt_magic_string_end);
+    }
+}
+
 /* Simplified version: sets "X-Geo-IP" header with the country only */
 void vcl_geoip_country_set_header(const struct sess *sp) {
     vcl_string hval[HEADER_MAXLEN];
