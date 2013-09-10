@@ -115,7 +115,7 @@ void vcl_geoip_send_synthetic(const struct sess *sp) {
     }
 }
 
-inline int strncpy_until(vcl_string *dest, vcl_string *src, unsigned char n, char terminator) {
+inline void strncpy_until(vcl_string *dest, vcl_string *src, unsigned char n, char terminator) {
     while (*src && (*src != terminator) && n--) {
         *(dest++) = *(src++);
     }
