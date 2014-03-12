@@ -4,6 +4,8 @@ Varnish Geo-IP VCL
 Last updated: 28/05/2013
 	Cosimo Streppone <cosimo@opera.com>
 	Opera Software ASA
+	Aaron Brady <bradya@gmail.com>
+	Interactive Web Solutions Ltd
 
 Here you will find a VCL config file for Varnish (http://varnish-cache.org)
 This VCL will transparently add a HTTP request header with Geo-IP information
@@ -17,10 +19,9 @@ We are using it in production, but we _don't_ know what we're doing :).
 Why would you want this?
 ------------------------
 So your backend application can just read a HTTP header and figure out
-where the client comes from, city, country and latitude/longitude.
-Of course this doesn't come for free. You need the city edition of Geo-IP.
+where the client comes from.
 
-The rewritten header is "X-Geo-IP".
+The rewritten header is "X-Geo-IP", and contains the ISO country code.
 
 X-Geo-IP header content
 -----------------------
