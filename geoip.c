@@ -57,6 +57,7 @@ static int geoip_lookup(vcl_string *ip, vcl_string *resolved) {
             record->longitude,
             ip
         );
+        free(record);
     }
 
     /* Failed lookup */
@@ -90,6 +91,7 @@ static int geoip_lookup_country(vcl_string *ip, vcl_string *resolved) {
         : FALLBACK_COUNTRY
     );
 
+    free(record);
     pthread_mutex_unlock(&geoip_mutex);
 
     /* Assume always success: we have FALLBACK_COUNTRY */
@@ -149,6 +151,10 @@ int main(int argc, char **argv) {
         geoip_lookup(argv[1], resolved);
     }
     printf("%s\n", resolved);
+
+    GeoIP_delete(gi);
+    gi = NULL;
+
     return 0;
 }
 #endif /* __VCL__ */
