@@ -13,3 +13,6 @@ geoip.vcl: Makefile geoip.c gen_vcl.pl
 test:
 	prove -I./t -v ./t
 
+clean:
+	rm geoip
+	rm geoip.vcl

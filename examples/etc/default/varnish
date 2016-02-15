@@ -25,5 +25,4 @@ DAEMON_OPTS="-a :6081 \
              -f /etc/varnish/default.vcl \
              -S /etc/varnish/secret \
              -s malloc,100M \
-             -p 'cc_command=exec cc -fpic -shared -Wl,-x -L/usr/include/GeoIP.h -lGeoIP -o %o %s'"
-
+             -p cc_command='exec cc -fpic -shared -Wl,-x -L/usr/lib -o %o %s -lGeoIP'"

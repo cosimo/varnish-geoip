@@ -1,7 +1,7 @@
 Varnish Geo-IP VCL
 ===========================
 
-Last updated: 28/05/2013
+Last updated: 18/07/2013
 	Cosimo Streppone <cosimo@opera.com>
 	Opera Software ASA
 
@@ -50,6 +50,7 @@ it should be reported as unknown IP.
 Requirements
 ------------
 
+- Maxmind GeoIP C API
 - gcc, make
 - a recent perl, with `prove'
 
@@ -71,15 +72,13 @@ Instructions
      vcl_geoip_set_header(sp);
      }C
 
-4) If you run Debian, look here:
+4) Update Varnish daemon options to set cc_command like in examples/etc/default/varnish file
+
+5) If you run Debian, look here:
 
    http://www.streppone.it/cosimo/blog/2011/11/how-to-start-up-varnish-with-a-custom-cc_command-on-debian/
 
    for instructions on how to specify a custom "cc_command" in
    the Varnish init script.
 
-5) Restart Varnish
-
-6) ?
-
-7) Profit !!
+6) Restart Varnish
